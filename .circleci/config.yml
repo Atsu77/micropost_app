@@ -1,0 +1,61 @@
+version: 2
+general:
+  branches:
+    only:
+      - master
+      - develop
+jobs:
+  build:
+    working_directory: ~/micropost_app
+    docker:
+      - image: circleci/ruby:2.7.2
+        environment:
+          PGHOST: 127.0.0.1
+          PGUSER: postgres
+          RAILS_ENV: test
+      - image: circleci/postgres:11.12
+        environment:
+          POSTGRES_USER: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: app_test
+
+    steps:
+      - checkout
+      #- run:
+      #    name: Install System Dependencies
+      #    command: |
+      #      sudo apt-get update
+      #      sudo apt-get install -y lsb-release
+
+      - restore_cache:
+          name: Restore bundle cache
+          keys:
+            - bundle-{{ checksum "Gemfile.lock" }}
+            - bundle-
+
+      - run:
+          name: Bundle Install
+          command: bundle check --path vendor/bundle || bundle install --path vendor/bundle --jobs 4 --retry 3
+
+      - save_cache:
+          name: Store bundle cache
+          key: bundle-{{ checksum "Gemfile.lock" }}
+          paths:
+            - vendor/bundle
+      
+      - run:
+          name: Set up DB
+          command: dockerize -wait tcp://127.0.0.1:5432 -timeout 120s
+      - run:
+          name: setup database.yml
+          command: cp ./config/database.ci.yml ./config/database.yml
+
+      - run: bundle exec rails db:create
+      - run: bundle exec rails db:schema:load
+
+      - run:
+          name: RSpec
+          command: bundle exec rspec
+
+      - store_artifacts:
+          path: coverage
