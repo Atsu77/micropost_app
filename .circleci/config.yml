@@ -37,6 +37,9 @@ jobs:
           key: bundle-{{ checksum "Gemfile.lock" }}
           paths:
             - vendor/bundle
+      - run:
+          name: Set up Webpacker
+          command: bundle exec rails webpacker:install
       
       - run:
           name: Set up DB
