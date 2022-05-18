@@ -36,5 +36,3 @@ storage/*
 config/master.key
 node_modules
 .scannerwork
-public/packs/*
-public/packs-test/*
